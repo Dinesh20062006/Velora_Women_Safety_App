@@ -190,7 +190,7 @@ function NearbySafeZones({ currentPosition: parentPosition }) {
       >
         <MapErrorBoundary>
           {hasMapsApiKey && currentPosition ? (
-            <APIProvider apiKey={mapsApiKey}>
+            <APIProvider apiKey={mapsApiKey} language="en">
               <Map
                 center={currentPosition}
                 defaultCenter={currentPosition}

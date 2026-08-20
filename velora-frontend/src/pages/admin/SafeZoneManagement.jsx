@@ -520,7 +520,7 @@ function SafeZoneManagement() {
             <div style={{ flex: 1, minHeight: "360px", borderRadius: "12px", overflow: "hidden", border: "1px solid #374151" }}>
               <MapErrorBoundary>
                 {hasMapsApiKey ? (
-                  <APIProvider apiKey={mapsApiKey}>
+                  <APIProvider apiKey={mapsApiKey} language="en">
                     <Map
                       center={{ lat: parseFloat(latitude) || 10.8795, lng: parseFloat(longitude) || 77.0223 }}
                       defaultCenter={{ lat: parseFloat(latitude) || 10.8795, lng: parseFloat(longitude) || 77.0223 }}

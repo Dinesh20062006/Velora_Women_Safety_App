@@ -1,12 +1,33 @@
 import axios from "axios";
+import client from "./client";
 
 const ML_SERVICE_URL = import.meta.env.VITE_ML_SERVICE_URL || "http://localhost:8000";
 
 const mlClient = axios.create({
   baseURL: ML_SERVICE_URL,
   headers: { "Content-Type": "application/json" },
-  timeout: 3000
+  timeout: 2500
 });
+
+// Circuit-breaker for ML Microservice to avoid connection error floods when service is offline
+let isMlServerAvailable = false;
+let lastMlCheckTime = 0;
+const CHECK_COOLDOWN_MS = 60000;
+
+export function canCheckMlServer() {
+  if (!isMlServerAvailable && lastMlCheckTime === 0) return false;
+  if (isMlServerAvailable) return true;
+  return Date.now() - lastMlCheckTime > CHECK_COOLDOWN_MS;
+}
+
+export function markMlServerOffline() {
+  isMlServerAvailable = false;
+  lastMlCheckTime = Date.now();
+}
+
+export function markMlServerOnline() {
+  isMlServerAvailable = true;
+}
 
 /**
  * ML Safety Analytics Engine for Velora
@@ -20,8 +41,8 @@ const mlClient = axios.create({
 export async function predictMLSafetyScore(lat, lng, options = {}) {
   const hour = options.hourOfDay ?? new Date().getHours();
 
-  // 1. Try Python ML Microservice (velora-ml-service on port 8000)
-  if (lat != null && lng != null) {
+  // 1. Try Python ML Microservice (velora-ml-service on port 8000) if available
+  if (lat != null && lng != null && canCheckMlServer()) {
     try {
       const payload = {
         latitude: lat,
@@ -35,10 +56,11 @@ export async function predictMLSafetyScore(lat, lng, options = {}) {
       const res = await mlClient.post("/api/v1/ml/predict-safety", payload);
 
       if (res?.data?.success && res?.data?.data) {
+        markMlServerOnline();
         return res.data;
       }
     } catch {
-      // Fallback seamlessly to local spatial engine if microservice is starting
+      markMlServerOffline();
     }
   }
 
@@ -113,20 +135,23 @@ export async function predictMLSafetyScore(lat, lng, options = {}) {
  * with real-time ML risk scoring.
  */
 export async function classifyMLZone(latitude, longitude, zone, description = "", radiusMeters = 400) {
-  try {
-    const res = await mlClient.post("/api/v1/ml/classify-zone", {
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      zone: zone.toLowerCase(),
-      description,
-      radiusMeters
-    });
+  if (canCheckMlServer()) {
+    try {
+      const res = await mlClient.post("/api/v1/ml/classify-zone", {
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        zone: zone.toLowerCase(),
+        description,
+        radiusMeters
+      });
 
-    if (res?.data?.success && res?.data?.data) {
-      return res.data;
+      if (res?.data?.success && res?.data?.data) {
+        markMlServerOnline();
+        return res.data;
+      }
+    } catch {
+      markMlServerOffline();
     }
-  } catch (err) {
-    console.warn("ML Service offline, using local dynamic classifier fallback:", err.message);
   }
 
   // Local ML Fallback Classifier
@@ -172,7 +197,7 @@ export async function classifyMLZone(latitude, longitude, zone, description = ""
 }
 
 /**
- * Fetch all live ML marked zones in real-time.
+ * Fetch all live ML marked zones and DB safe zones in real-time.
  */
 export async function fetchRealtimeMLMarkedZones(lat, lng) {
   let localAdminZones = [];
@@ -185,49 +210,154 @@ export async function fetchRealtimeMLMarkedZones(lat, lng) {
     localAdminZones = [];
   }
 
-  // 1. Primary: Python ML microservice (velora-ml-service on port 8000)
+  const rawList = [...localAdminZones];
+
+  // 1. Primary: Python ML microservice (velora-ml-service on port 8000) if available
+  if (canCheckMlServer()) {
+    try {
+      const res = await mlClient.get("/api/v1/ml/marked-zones");
+      const list = res?.data?.data || res?.data;
+      if (Array.isArray(list)) {
+        rawList.push(...list);
+      }
+      markMlServerOnline();
+    } catch {
+      markMlServerOffline();
+    }
+  }
+
+  // 2. Safety Microservice DB Endpoint via client API Gateway (/safety/safe-zones)
+  let fetchedFromGateway = false;
   try {
-    const res = await mlClient.get("/api/v1/ml/marked-zones");
-    if (res?.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-      return [...localAdminZones, ...res.data.data];
+    const res = await client.get("/safety/safe-zones", { params: { page: 0, size: 50 } });
+    const content = res?.data?.data?.content || res?.data?.content || res?.data?.data || res?.data;
+    if (Array.isArray(content) && content.length > 0) {
+      rawList.push(...content);
+      fetchedFromGateway = true;
     }
   } catch {
-    /* ignore python ml service fallback error */
+    /* ignore gateway safety error */
   }
 
-  // 2. Secondary fallback: Java Admin Backend (port 8080) only if primary is empty/offline
+  // 3. Direct Safety Microservice DB fallback (port 8083) - only if gateway attempt did not fetch
+  if (!fetchedFromGateway) {
+    try {
+      const directSafety = await axios.get("http://localhost:8083/api/v1/safety/safe-zones", { timeout: 1200 });
+      const content = directSafety?.data?.data?.content || directSafety?.data?.content || directSafety?.data?.data || directSafety?.data;
+      if (Array.isArray(content)) {
+        rawList.push(...content);
+      }
+    } catch {
+      /* ignore direct safety error */
+    }
+  }
+
+  // 4. Admin Microservice DB fallback (/admin/safe-zones)
   try {
-    const res = await axios.get("http://localhost:8080/api/v1/admin/ml-zones", { timeout: 1000 });
-    if (res?.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-      return [...localAdminZones, ...res.data.data];
+    const res = await client.get("/admin/safe-zones");
+    const list = res?.data?.data || res?.data;
+    if (Array.isArray(list)) {
+      rawList.push(...list);
     }
   } catch {
-    /* ignore backend error */
+    /* ignore admin gateway error */
   }
 
-  if (localAdminZones.length > 0) {
-    return localAdminZones;
+  // Deduplicate and Normalize all fetched zone objects
+  const seen = new Set();
+  const normalizedList = [];
+
+  for (let idx = 0; idx < rawList.length; idx++) {
+    const z = rawList[idx];
+    if (!z) continue;
+
+    const rawLat = z.latitude ?? z.lat;
+    const rawLng = z.longitude ?? z.lng;
+    const latNum = parseFloat(rawLat);
+    const lngNum = parseFloat(rawLng);
+
+    if (isNaN(latNum) || isNaN(lngNum) || (!latNum && !lngNum)) continue;
+
+    const latVal = latNum.toFixed(4);
+    const lngVal = lngNum.toFixed(4);
+    const idKey = z.id ? `id:${z.id}` : null;
+    const coordKey = `coord:${latVal},${lngVal}`;
+
+    if ((idKey && seen.has(idKey)) || seen.has(coordKey)) {
+      continue;
+    }
+
+    if (idKey) seen.add(idKey);
+    seen.add(coordKey);
+
+    const score = Number(z.safetyScore ?? z.score ?? (z.zone === "unsafe" || z.level === "HIGH_RISK" ? 28 : z.zone === "moderate" || z.level === "MODERATE_RISK" ? 62 : 94));
+    let zoneCategory = (z.zone || z.level || "").toLowerCase();
+    if (!zoneCategory) {
+      zoneCategory = score >= 80 ? "safe" : score >= 45 ? "moderate" : "unsafe";
+    }
+
+    let color = z.color;
+    if (!color) {
+      if (zoneCategory.includes("unsafe") || zoneCategory.includes("high") || zoneCategory.includes("red") || score < 45) {
+        color = "#FF5252";
+      } else if (zoneCategory.includes("moderate") || zoneCategory.includes("yellow") || score < 80) {
+        color = "#FFC107";
+      } else {
+        color = "#00E676";
+      }
+    }
+
+    const level = z.level || (color === "#FF5252" ? "HIGH_RISK" : color === "#FFC107" ? "MODERATE_RISK" : "SAFE");
+
+    normalizedList.push({
+      id: z.id || `safe_zone_${idx}_${Date.now()}`,
+      name: z.name || z.title || z.description || "Verified Safe Zone",
+      description: z.description || z.address || z.name || "Monitored Safe Location",
+      latitude: latNum,
+      longitude: lngNum,
+      lat: latNum,
+      lng: lngNum,
+      zone: zoneCategory,
+      level,
+      score,
+      safetyScore: score,
+      radiusMeters: Number(z.radiusMeters || 400),
+      zoneType: z.zoneType || z.type || "SAFE_PLACE",
+      address: z.address || z.description || "24/7 Monitored Safe Location",
+      contactNumber: z.phoneNumber || z.contactNumber || "Emergency 112 / 100",
+      open24Hours: true,
+      color,
+      fill: z.fill || (color + "33")
+    });
   }
 
-  // 3. Fallback predictive marked zones centered around user coordinates
+  if (normalizedList.length > 0) {
+    return normalizedList;
+  }
+
+  // 5. Fallback predictive marked zones centered around user coordinates
   const effectiveLat = lat ?? 10.8795;
   const effectiveLng = lng ?? 77.0223;
 
   return [
-    ...localAdminZones,
     {
       id: "ml_zone_init_1",
       name: "Central Metro Security Hub",
       description: "24/7 Police Patrol & Verified Safe Hub",
       latitude: effectiveLat + 0.003,
       longitude: effectiveLng + 0.002,
+      lat: effectiveLat + 0.003,
+      lng: effectiveLng + 0.002,
       zone: "safe",
       score: 94.5,
+      safetyScore: 94.5,
       level: "SAFE",
       label: "Safe Zone (75-95)",
       color: "#00E676",
       fill: "#00E67633",
       radiusMeters: 450,
+      zoneType: "SAFE_PLACE",
+      address: "24/7 Monitored Safe Location",
       recommendation: "Location conditions are optimal for travel."
     },
     {
@@ -236,13 +366,18 @@ export async function fetchRealtimeMLMarkedZones(lat, lng) {
       description: "Monitored Citizen Refuge Kiosk",
       latitude: effectiveLat - 0.004,
       longitude: effectiveLng + 0.005,
+      lat: effectiveLat - 0.004,
+      lng: effectiveLng + 0.005,
       zone: "safe",
       score: 91.0,
+      safetyScore: 91.0,
       level: "SAFE",
       label: "Safe Zone (75-95)",
       color: "#00E676",
       fill: "#00E67633",
       radiusMeters: 400,
+      zoneType: "SAFE_PLACE",
+      address: "24/7 Monitored Safe Location",
       recommendation: "Location conditions are optimal for travel."
     },
     {
@@ -251,15 +386,21 @@ export async function fetchRealtimeMLMarkedZones(lat, lng) {
       description: "Moderate risk area due to sparse lighting",
       latitude: effectiveLat + 0.007,
       longitude: effectiveLng - 0.005,
+      lat: effectiveLat + 0.007,
+      lng: effectiveLng - 0.005,
       zone: "moderate",
       score: 62.0,
+      safetyScore: 62.0,
       level: "MODERATE_RISK",
       label: "Moderate Risk Zone (40-75)",
       color: "#FFC107",
       fill: "#FFC10733",
       radiusMeters: 500,
+      zoneType: "SAFE_PLACE",
+      address: "Moderate Risk Caution Zone",
       recommendation: "Exercise heightened awareness. Stay on well-lit main roads."
     }
   ];
 }
+
 

@@ -163,7 +163,7 @@ function Dashboard() {
               <div style={{ width: "100%", height: "380px", borderRadius: "10px", overflow: "hidden", border: "1px solid #374151" }}>
                 <MapErrorBoundary>
                   {mapsApiKey ? (
-                    <APIProvider apiKey={mapsApiKey}>
+                    <APIProvider apiKey={mapsApiKey} language="en">
                       <Map
                         defaultCenter={policePos}
                         center={policePos}

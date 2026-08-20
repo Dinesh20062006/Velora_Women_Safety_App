@@ -14,20 +14,12 @@ function OTP() {
   const targetId = identifier || phone;
 
   const [currentOtp, setCurrentOtp] = useState(stateOtp || "123456");
-  const [showModal, setShowModal] = useState(true);
 
   const inputsRef = useRef([]);
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleAutofill = () => {
-    const codeArr = currentOtp.split("").slice(0, 6);
-    while (codeArr.length < 6) codeArr.push("0");
-    setDigits(codeArr);
-    setShowModal(false);
-  };
 
   if (!targetId) {
     return (
@@ -98,7 +90,7 @@ function OTP() {
       const res = await resendOtp(targetId);
       const newCode = res.data?.otp || String(Math.floor(100000 + Math.random() * 900000));
       setCurrentOtp(newCode);
-      setShowModal(true);
+      alert(`Your new OTP verification code is: ${newCode}`);
     } catch (err) {
       alert(err.response?.data?.message || "Failed to resend OTP");
     }
@@ -106,87 +98,6 @@ function OTP() {
 
   return (
     <div className="otp" style={{ position: "relative" }}>
-
-      {/* Pop-Up Modal Banner for OTP Display */}
-      {showModal && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 9999,
-          padding: "20px"
-        }}>
-          <div style={{
-            backgroundColor: "#1e293b",
-            color: "#ffffff",
-            padding: "24px 32px",
-            borderRadius: "16px",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)",
-            maxWidth: "420px",
-            width: "100%",
-            textAlign: "center",
-            border: "1px solid #3b82f6"
-          }}>
-            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🔐</div>
-            <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#60a5fa", marginBottom: "8px" }}>
-              Police Officer OTP Verification
-            </h2>
-            <p style={{ fontSize: "14px", color: "#cbd5e1", marginBottom: "16px" }}>
-              Verification code for <strong>{targetId}</strong>:
-            </p>
-            <div style={{
-              fontSize: "32px",
-              fontWeight: "800",
-              letterSpacing: "6px",
-              color: "#38bdf8",
-              backgroundColor: "#0f172a",
-              padding: "12px 20px",
-              borderRadius: "12px",
-              marginBottom: "20px",
-              border: "1px dashed #38bdf8"
-            }}>
-              {currentOtp}
-            </div>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-              <button
-                onClick={handleAutofill}
-                style={{
-                  backgroundColor: "#2563eb",
-                  color: "#ffffff",
-                  padding: "10px 20px",
-                  borderRadius: "8px",
-                  fontWeight: "600",
-                  border: "none",
-                  cursor: "pointer",
-                  flex: 1
-                }}
-              >
-                Auto-fill Code
-              </button>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{
-                  backgroundColor: "#475569",
-                  color: "#ffffff",
-                  padding: "10px 20px",
-                  borderRadius: "8px",
-                  fontWeight: "600",
-                  border: "none",
-                  cursor: "pointer"
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="otp-container">
 

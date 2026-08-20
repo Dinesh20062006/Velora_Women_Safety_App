@@ -212,15 +212,17 @@ function SafeRoute() {
     const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
     const hasMapsApiKey = Boolean(mapsApiKey);
 
-    // Reverse geocode lat/lng to readable location
+    // Reverse geocode lat/lng to readable location (Enforced English ONLY)
     const reverseGeocode = async (lat, lng) => {
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&accept-language=en&lat=${lat}&lon=${lng}`);
             const data = await res.json();
             if (data && data.display_name) {
-                const parts = data.display_name.split(",");
-                const shortAddress = parts.slice(0, 3).join(",").trim();
-                return `📍 Current Location (${shortAddress || data.display_name})`;
+                // Strip Tamil script characters (\u0B80-\u0BFF) to ensure 100% English text
+                const cleanDisplayName = data.display_name.replace(/[\u0B80-\u0BFF]/g, "").replace(/,\s*,/g, ",").trim();
+                const parts = cleanDisplayName.split(",").map(p => p.trim()).filter(Boolean);
+                const shortAddress = parts.slice(0, 3).join(", ");
+                return `📍 Current Location (${shortAddress || cleanDisplayName})`;
             }
         } catch {}
         return `📍 Current Location (${lat.toFixed(4)}°, ${lng.toFixed(4)}°)`;
@@ -397,7 +399,7 @@ function SafeRoute() {
                 <div className="map-card">
                     <MapErrorBoundary>
                         {hasMapsApiKey ? (
-                            <APIProvider apiKey={mapsApiKey}>
+                            <APIProvider apiKey={mapsApiKey} language="en">
                                 <Map
                                     center={currentPosition}
                                     defaultCenter={currentPosition}

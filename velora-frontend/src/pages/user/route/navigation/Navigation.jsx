@@ -377,7 +377,7 @@ function Navigation() {
                 <div className="navigation-map-card" style={{ width: "100%", height: "450px", borderRadius: "12px", overflow: "hidden", border: "1px solid #374151", marginBottom: "24px", position: "relative" }}>
                     <MapErrorBoundary>
                         {hasMapsApiKey ? (
-                            <APIProvider apiKey={mapsApiKey}>
+                            <APIProvider apiKey={mapsApiKey} language="en">
                                 <Map
                                     defaultCenter={routeData.origin}
                                     defaultZoom={15}

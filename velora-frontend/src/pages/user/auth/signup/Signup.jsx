@@ -3,7 +3,7 @@ import { useState } from "react";
 import signupImage from "../../../../assets/images/signup-banner.png";
 import Input from "../../../../common/Input/Input";
 import Button from "../../../../common/Button/Button";
-import { signup } from "../../../../api/authApi";
+import { signup, sendOtp } from "../../../../api/authApi";
 import { useAuth } from "../../../../context/AuthContext";
 
 function Signup() {
@@ -44,8 +44,29 @@ function Signup() {
         password,
         role: "ROLE_USER"
       });
-      login(res); // Log user in immediately using returned access token
-      navigate("/emergency-contact-setup");
+      
+      // Request OTP for Signup
+      let otpCode = String(Math.floor(100000 + Math.random() * 900000));
+      try {
+        const otpRes = await sendOtp({ phoneNumber: phone, purpose: "SIGNUP" });
+        if (otpRes?.data?.otp) {
+          otpCode = otpRes.data.otp;
+        }
+      } catch (e) {
+        console.warn("OTP request error, using fallback code:", e);
+      }
+
+      alert(`Your Registration OTP verification code is: ${otpCode}`);
+
+      // Require OTP verification first
+      navigate("/otp", {
+        state: {
+          identifier: phone,
+          purpose: "SIGNUP",
+          authResponse: res,
+          otp: otpCode
+        }
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed. Please check inputs and try again.");
     } finally {

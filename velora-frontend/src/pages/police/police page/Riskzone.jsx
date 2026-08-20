@@ -406,7 +406,7 @@ function Riskzone() {
             )}
 
             {hasMapsApiKey ? (
-              <APIProvider apiKey={mapsApiKey}>
+              <APIProvider apiKey={mapsApiKey} language="en">
                 <div style={{ flex: 1, height: "100%", minHeight: "500px", borderRadius: "8px", overflow: "hidden", position: "relative" }}>
                   <Map
                     defaultCenter={policePos}

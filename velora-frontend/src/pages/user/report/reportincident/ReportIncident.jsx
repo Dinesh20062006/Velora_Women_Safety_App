@@ -55,16 +55,17 @@ function ReportIncident() {
     const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
     const hasMapsApiKey = Boolean(mapsApiKey);
 
-    // Reverse geocode to convert lat/lng to readable location address
+    // Reverse geocode to convert lat/lng to readable location address (Enforced English ONLY)
     const reverseGeocode = async (lat, lng) => {
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&accept-language=en&lat=${lat}&lon=${lng}`);
             const data = await res.json();
             if (data && data.display_name) {
-                // Shorten long address format
-                const parts = data.display_name.split(",");
-                const shortAddress = parts.slice(0, 3).join(",").trim();
-                setAddress(shortAddress || data.display_name);
+                // Strip Tamil script characters (\u0B80-\u0BFF) to ensure 100% English text
+                const cleanDisplayName = data.display_name.replace(/[\u0B80-\u0BFF]/g, "").replace(/,\s*,/g, ",").trim();
+                const parts = cleanDisplayName.split(",").map(p => p.trim()).filter(Boolean);
+                const shortAddress = parts.slice(0, 3).join(", ");
+                setAddress(shortAddress || cleanDisplayName);
             }
         } catch {
             // Silently fallback if geocoding service is unavailable
@@ -267,7 +268,7 @@ function ReportIncident() {
 
                     <div className="report-map-container">
                         {hasMapsApiKey ? (
-                            <APIProvider apiKey={mapsApiKey}>
+                            <APIProvider apiKey={mapsApiKey} language="en">
                                 <Map
                                     center={mapCenter}
                                     defaultCenter={mapCenter}

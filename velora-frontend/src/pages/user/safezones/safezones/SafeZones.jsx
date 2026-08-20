@@ -139,10 +139,10 @@ function SafeZones() {
                     fill: z.fill || (z.color ? z.color + "33" : "#00E67633")
                 };
             })
-            .filter((h) => !currentPosition || h.distanceKm <= 10.0 || realtimeMLZones.length <= 5); // 10 km radius filter
+            .filter((h) => !currentPosition || h.distanceKm <= 50.0 || realtimeMLZones.length <= 10); // Expanded radius filter
     }, [realtimeMLZones, currentPosition]);
 
-    /* Filter 2 UNIQUE GREEN SAFE ZONES within 10 km radius without any duplicates */
+    /* Filter 2 UNIQUE GREEN SAFE ZONES within radius without any duplicates */
     const greenSafeZonesNearby = useMemo(() => {
         if (!realtimeMLZones || realtimeMLZones.length === 0) {
             return generateSampleSafeZones(currentPosition?.lat, currentPosition?.lng).slice(0, 2);
@@ -178,7 +178,7 @@ function SafeZones() {
                 };
             })
             .filter((z) => z.isGreen) // Must be a Green Safe Zone
-            .filter((z) => !currentPosition || z.distanceKm <= 10.0 || realtimeMLZones.length <= 5) // Within 10 km radius
+            .filter((z) => !currentPosition || z.distanceKm <= 50.0 || realtimeMLZones.length <= 10)
             .sort((a, b) => a.distanceKm - b.distanceKm); // Sort nearest first
 
         // Deduplicate by zone name
@@ -205,7 +205,7 @@ function SafeZones() {
                 <div className="zone-map-card">
                     <MapErrorBoundary>
                         {hasMapsApiKey && currentPosition ? (
-                            <APIProvider apiKey={mapsApiKey}>
+                            <APIProvider apiKey={mapsApiKey} language="en">
                                 <Map
                                     center={currentPosition}
                                     defaultCenter={currentPosition}

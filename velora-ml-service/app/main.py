@@ -12,9 +12,6 @@ from datetime import datetime, timedelta
 from urllib.parse import unquote
 import string
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = FastAPI(
     title="Velora ML Safety Microservice",
@@ -532,9 +529,9 @@ async def ai_chat_endpoint(input_data: AIChatInput):
     if not msg:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     
-    # 1. Try Google Gemini API from Python backend
+    # 1. Try Google Gemini API from Python backend (if valid key set)
     gemini_key = os.getenv("VITE_GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
-    if gemini_key and len(gemini_key.strip()) > 10:
+    if gemini_key and len(gemini_key.strip()) > 15 and not gemini_key.startswith("AQ."):
         import requests
         system_prompt = "You are Velora AI, an intelligent 24/7 Women's Safety Assistant. Provide short, clear, highly structured, empathetic, and actionable safety guidance for emergency instructions, safe route precautions, self-defense tactics, helpline numbers, and incident prevention. Format your response with clear bullet points, bold headings, and helpful emojis."
         
@@ -545,7 +542,7 @@ async def ai_chat_endpoint(input_data: AIChatInput):
                 res = requests.post(
                     url,
                     json={"contents": [{"parts": [{"text": f"{system_prompt}\n\nUser Safety Question: {msg}"}]}]},
-                    timeout=8
+                    timeout=5
                 )
                 if res.status_code == 200:
                     data = res.json()
@@ -564,20 +561,54 @@ async def ai_chat_endpoint(input_data: AIChatInput):
             except Exception as e:
                 print(f"[Velora ML] Backend Gemini call exception: {e}")
 
-    # 2. Fallback to Local ML Safety Advisor
-    q = msg.lower()
-    if any(k in q for k in ["sos", "emergency", "help", "danger"]):
-        reply = "🚨 EMERGENCY SAFETY PROTOCOL:\n• Press & hold Velora SOS button for 3s to alert emergency contacts & dispatch GPS.\n• Call National Helpline 112 or Police 100.\n• Stay in a well-lit area near people."
-    elif any(k in q for k in ["night", "walk", "dark", "alone"]):
-        reply = "🌙 NIGHT TRAVEL SAFETY GUIDE:\n• Use Velora SafeRoute to select high-safety score routes.\n• Keep live location sharing active with your emergency contacts.\n• Avoid unlit alleys and keep your phone accessible."
-    elif any(k in q for k in ["cab", "taxi", "uber", "auto"]):
-        reply = "🚕 RIDE SAFETY PRECAUTIONS:\n• Verify vehicle registration plate & driver photo before entry.\n• Sit in the rear seat and keep trip tracking live.\n• Share your ride details with family/friends via Velora."
-    elif any(k in q for k in ["follow", "stalk", "stranger"]):
-        reply = "🚶 BEING FOLLOWED PROCEDURES:\n• Cross the street and move towards an open shop or public spot.\n• Call an emergency contact out loud and state your exact street location.\n• Activate Velora SOS immediately if threatened."
-    elif any(k in q for k in ["number", "helpline", "phone"]):
-        reply = "📞 HELPLINE DIRECTORY (INDIA):\n• Emergency Services: 112\n• Police Command: 100\n• Women Helpline: 1091\n• Cyber Crime: 1930\n• Ambulance: 108"
+    # 2. Comprehensive Local Velora AI Safety Intelligence Engine
+    q = msg.lower().strip()
+
+    if any(k in q for k in ["hi", "hello", "hey", "who are you", "what can you do", "help me"]):
+        reply = "👋 Hello! I am **Velora AI Safety Assistant**, your 24/7 intelligent safety advisor.\n\nI can assist you with:\n• 🚨 Immediate SOS emergency protocols & 112 helpline dispatch\n• 🌙 Night travel, safe route navigation & lighting scores\n• 🚕 Taxi, cab & ride-share safety precautions\n• 🚶 Action steps if being followed or stalked\n• 🛡️ Self-defense tactics & emergency contact management\n• 🗺️ Safe Zone shelter locations & risk scores\n\nHow can I support your safety today?"
+
+    elif any(k in q for k in ["sos", "emergency", "help", "danger", "panic", "distress"]):
+        reply = "🚨 **IMMEDIATE SOS EMERGENCY PROTOCOL**:\n• **Step 1**: Press & hold the red **Velora SOS** button for 3 seconds.\n• **Step 2**: An automated distress call & live GPS coordinates will be dispatched to **112** (National Emergency) and **100** (Police Control Room).\n• **Step 3**: Your primary emergency contacts will receive instant SMS location tracking alerts.\n• **Step 4**: Move immediately toward a well-lit, populated area or nearest open store."
+
+    elif any(k in q for k in ["night", "walk", "dark", "alone", "evening", "late", "street"]):
+        reply = "🌙 **NIGHT TRAVEL & SAFE ROUTE RECOMMENDATIONS**:\n• Use **Velora Safe Route** navigation to select paths with high street lighting and live safety scores.\n• Avoid unlit alleyways, deserted transit stops, and secluded footpaths.\n• Enable live location sharing with your primary emergency contacts before heading out.\n• Keep your phone charged, accessible, and maintain high situational awareness."
+
+    elif any(k in q for k in ["cab", "taxi", "uber", "auto", "ola", "driver", "ride"]):
+        reply = "🚕 **TAXI & RIDE-SHARE SAFETY PRECAUTIONS**:\n• Verify the vehicle license plate number, make, and driver photo before entering.\n• Sit in the rear passenger seat for better personal space and visual awareness.\n• Share your live ride tracking link with a family member or emergency contact.\n• Check that child locks are disabled before closing the door.\n• If the driver deviates off course, trigger **Velora SOS** or dial **112** immediately."
+
+    elif any(k in q for k in ["follow", "stalk", "stranger", "behind", "shadow", "suspicious", "lurking"]):
+        reply = "🚶 **PROCEDURES IF BEING FOLLOWED OR STALKED**:\n• **Cross the street**: Check if the individual actively mirrors your direction.\n• **Head to safety**: Do NOT go home directly. Walk into an open shop, restaurant, or police booth.\n• **Create awareness**: Call a family member or 112 out loud and state your exact street location.\n• **Trigger SOS**: Hold the Velora SOS button to broadcast your live GPS coords.\n• **Posture**: Keep your head up, walk confidently, and stay alert."
+
+    elif any(k in q for k in ["number", "helpline", "phone", "dial", "call", "112", "100", "1091", "1930"]):
+        reply = "📞 **OFFICIAL EMERGENCY HELPLINE DIRECTORY (INDIA)**:\n• **National Emergency Helpline**: 112\n• **Police Control Command**: 100\n• **Women Helpline Desk**: 1091\n• **Cyber Crime Reporting**: 1930\n• **Ambulance Service**: 108 / 102"
+
+    elif any(k in q for k in ["defense", "protect", "pepper", "spray", "alarm", "whistle", "attack", "fight"]):
+        reply = "🛡️ **ESSENTIAL SELF-DEFENSE TACTICS & GEAR**:\n• **Situational Awareness**: Avoid wearing noise-canceling headphones in isolated areas.\n• **Safety Gear**: Keep pepper spray, a loud whistle, or a personal alarm in an easily accessible outer pocket.\n• **Target Vulnerable Areas**: If physically attacked, strike the eyes, nose, throat, or groin.\n• **Shout Loudly**: Use words like 'FIRE' or 'HELP' to attract immediate public attention.\n• **Trigger Velora SOS**: Automatically alerts police command and emergency contacts with your live location."
+
+    elif any(k in q for k in ["zone", "safe zone", "score", "map", "location", "gps", "geofence", "area", "risk"]):
+        reply = "🗺️ **VELORA SAFE ZONES & RISK SCORE ENGINE**:\n• **Safe Zone Map**: View verified 24/7 safe shelters, police booths, and medical emergency hubs near your location.\n• **Safety Score**: Calculated live using street lighting density, camera coverage, and historical crime incident frequency.\n• **Geofence Alerts**: Receive automated warnings when entering areas with low safety scores."
+
+    elif any(k in q for k in ["report", "incident", "complaint", "evidence", "harass", "photo", "misconduct"]):
+        reply = "📋 **REPORTING AN INCIDENT WITH EVIDENCE**:\n• **Step 1**: Go to **Report Incident** from the Velora main menu.\n• **Step 2**: Select the incident category (Harassment, Stalking, Unlit Street, Theft, Suspicious Activity).\n• **Step 3**: Upload photos or evidence audio if available.\n• **Step 4**: Submit your report. It is automatically routed to local police patrol and logged under 'Recent Cases'."
+
+    elif any(k in q for k in ["contact", "add", "family", "friend", "parent", "sister", "primary"]):
+        reply = "📱 **EMERGENCY CONTACTS MANAGEMENT**:\n• Go to **Emergency Contacts** in your menu.\n• Click **+ Add Contact** to enter trusted family members or friends.\n• Designated primary contacts automatically receive instant SMS & live tracking links whenever an SOS is triggered."
+
+    elif any(k in q for k in ["college", "hostel", "campus", "work", "office", "pg"]):
+        reply = "🏫 **CAMPUS, HOSTEL & WORKPLACE SAFETY**:\n• Keep campus security, hostel wardens, and HR helpline numbers saved in Velora.\n• Stick to well-lit campus paths when returning late from libraries or work shifts.\n• Share your live location with roommates or family during late commutes."
+
+    elif any(k in q for k in ["cyber", "online", "message", "social", "threat", "blackmail", "spam"]):
+        reply = "🌐 **CYBER SAFETY & ONLINE HARASSMENT SUPPORT**:\n• Take screenshots of inappropriate messages, emails, or threat profiles as evidence.\n• Do not engage with harassers; block accounts immediately.\n• Report online harassment directly to the **National Cyber Crime Portal** at **1930** or `cybercrime.gov.in`."
+
+    elif any(k in q for k in ["breakdown", "flat tire", "puncture", "mechanic", "tow", "stranded"]):
+        reply = "🚗 **NIGHTTIME VEHICLE BREAKDOWN PROTOCOL**:\n• Turn on hazard lights immediately and pull over to a well-lit shoulder.\n• Stay inside the locked vehicle with windows rolled up while waiting for help.\n• Share your live GPS location with your emergency contacts via Velora.\n• Call Highway Helpline **1033** or National Emergency Helpline **112** for official dispatch."
+
+    elif any(k in q for k in ["poem", "poetry", "rhyme", "quote", "inspire", "empower"]):
+        reply = "🌸 **WOMEN'S EMPOWERMENT & COURAGE**:\n\n*Walk with courage, fearless and bright,*\n*Guarded by strength through the darkest night.*\n*Empowered voices united as one,*\n*Standing resilient till safety is won.*\n\n🛡️ *Velora Safety Tip*: Courage begins with awareness. Keep emergency contacts on quick access and trust your instincts in every situation."
+
     else:
-        reply = f"🛡️ VELORA AI SAFETY ADVISOR:\nRegarding '{msg}': Always prioritize situational awareness, keep emergency contacts on speed-dial, and use Velora's Safe Route navigation for live risk monitoring."
+        clean_query = msg[:60] + "..." if len(msg) > 60 else msg
+        reply = f"🛡️ **VELORA AI SAFETY ASSISTANT**:\n\nRegarding *\"{clean_query}\"*:\n\n1. **Situational Awareness**: Stay alert to your surroundings and keep your phone accessible.\n2. **Emergency Helpline**: For urgent assistance, dial **112** (National Emergency) or **100** (Police Control Room).\n3. **Velora SOS Action**: Press the 1-tap SOS button to instantly broadcast your live GPS coords to emergency contacts and police.\n4. **Safe Navigation**: Use Velora's Safe Route map to navigate through verified well-lit streets and safe zones."
 
     return {
         "success": True,

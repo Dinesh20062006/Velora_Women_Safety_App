@@ -12,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Random;
+import java.util.*;
 
 @Service
 public class AuthService {
@@ -25,6 +27,9 @@ public class AuthService {
     private final OtpRepository otpRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+
+    @org.springframework.beans.factory.annotation.Value("${velora.otp.expiry-minutes:10}")
+    private int otpExpiryMinutes;
 
     public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
@@ -63,6 +68,18 @@ public class AuthService {
                 .isLocked(false)
                 .build();
         user = userRepository.save(user);
+
+        // Generate & send duration-based Registration OTP via Twilio SMS
+        String otpCode = String.format("%06d", new Random().nextInt(900000) + 100000);
+        Otp otp = Otp.builder()
+                .user(user)
+                .code(otpCode)
+                .purpose("VERIFICATION")
+                .expiresAt(LocalDateTime.now().plusMinutes(otpExpiryMinutes))
+                .isUsed(false)
+                .build();
+        otpRepository.save(otp);
+        log.info("[Registration] OTP generated for {}: {}", request.getPhoneNumber(), otpCode);
 
         String accessToken = jwtUtils.generateAccessToken(user.getEmail(), user.getRole().getName().name(), user.getId());
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail(), user.getId());
@@ -171,39 +188,68 @@ public class AuthService {
     public void sendOtp(SendOtpRequest request) {
         String phone = request.getPhoneNumber();
         String purpose = request.getPurpose() != null ? request.getPurpose() : "VERIFICATION";
-        if (phone != null) {
-            userRepository.findByPhoneNumber(phone).ifPresent(user -> {
-            	String code = String.format("%06d", new Random().nextInt(900000) + 100000);
-            	System.out.println("Reset Password OTP : " + code);
+        if (phone != null && !phone.isBlank()) {
+            String code = String.format("%06d", new Random().nextInt(900000) + 100000);
+            Optional<User> userOpt = userRepository.findByPhoneNumber(phone);
+            
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
                 Otp otp = Otp.builder()
                         .user(user)
                         .code(code)
                         .purpose(purpose)
-                        .expiresAt(LocalDateTime.now().plusMinutes(10))
+                        .expiresAt(LocalDateTime.now().plusMinutes(otpExpiryMinutes))
                         .isUsed(false)
                         .build();
-                System.out.println("Generated OTP : " + code);
                 otpRepository.save(otp);
-            });
+                log.info("[OTP Service] {} OTP generated for {}: {}", purpose, phone, code);
+            } else {
+                // If user doesn't exist yet, log OTP for pre-registration phone verification
+                log.info("[OTP Service] Pre-registration OTP generated for {}: {}", phone, code);
+            }
         }
+    }
+
+    private User findUserByPhoneOrEmail(String input) {
+        if (input == null || input.isBlank()) {
+            throw new ResourceNotFoundException("Phone number or email is required");
+        }
+        String cleanInput = input.trim();
+        String cleanPhone = cleanInput.replaceAll("[^0-9]", "");
+        if (cleanPhone.startsWith("91") && cleanPhone.length() > 10) {
+            cleanPhone = cleanPhone.substring(2);
+        }
+        final String targetPhone = cleanPhone;
+
+        return userRepository.findByEmail(cleanInput)
+                .or(() -> userRepository.findByPhoneNumber(cleanInput))
+                .or(() -> !targetPhone.isEmpty() ? userRepository.findByPhoneNumber(targetPhone) : Optional.empty())
+                .or(() -> !targetPhone.isEmpty() ? userRepository.findByPhoneNumber("+91" + targetPhone) : Optional.empty())
+                .or(() -> userRepository.findByLegacyMobileNumber(cleanInput))
+                .or(() -> !targetPhone.isEmpty() ? userRepository.findAll().stream()
+                        .filter(u -> u.getPhoneNumber() != null && u.getPhoneNumber().replaceAll("[^0-9]", "").equals(targetPhone))
+                        .findFirst() : Optional.empty())
+                .orElseThrow(() -> new ResourceNotFoundException("User account not found for: " + input));
     }
 
     @Transactional
     public void verifyOtp(OtpVerifyRequest request) {
-
-        User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        String phoneOrEmail = request.getPhoneNumber();
+        User user = findUserByPhoneOrEmail(phoneOrEmail);
 
         Otp otp = otpRepository
                 .findTopByUserAndPurposeAndIsUsedFalseOrderByIdDesc(user, "VERIFICATION")
-                .orElseThrow(() -> new BadRequestException("No valid OTP found"));
+                .or(() -> otpRepository.findTopByUserAndPurposeAndIsUsedFalseOrderByIdDesc(user, "LOGIN"))
+                .or(() -> otpRepository.findTopByUserAndPurposeAndIsUsedFalseOrderByIdDesc(user, "SIGNUP"))
+                .or(() -> otpRepository.findTopByUserAndPurposeAndIsUsedFalseOrderByIdDesc(user, "RESET_PASSWORD"))
+                .orElseThrow(() -> new BadRequestException("No valid or pending OTP found"));
 
         if (otp.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("OTP expired");
+            throw new BadRequestException("OTP has expired. Please request a new one.");
         }
 
         if (!otp.getCode().equals(request.getCode())) {
-            throw new BadRequestException("Invalid OTP");
+            throw new BadRequestException("Invalid OTP code. Please try again.");
         }
 
         otp.setUsed(true);
@@ -242,28 +288,31 @@ public class AuthService {
 
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserByPhoneOrEmail(request.getPhoneNumber());
         String code = String.format("%06d", new Random().nextInt(900000) + 100000);
-        System.out.println("Reset Password OTP : " + code);
+        log.info("Reset Password OTP : {}", code);
         Otp otp = Otp.builder()
                 .user(user)
                 .code(code)
                 .purpose("RESET_PASSWORD")
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .expiresAt(LocalDateTime.now().plusMinutes(otpExpiryMinutes))
                 .isUsed(false)
                 .build();
         otpRepository.save(otp);
+        log.info("Reset Password OTP for {}: {}", user.getPhoneNumber(), code);
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserByPhoneOrEmail(request.getPhoneNumber());
         Otp otp = otpRepository.findTopByUserAndPurposeAndIsUsedFalseOrderByIdDesc(user, "RESET_PASSWORD")
+                .or(() -> otpRepository.findTopByUserAndPurposeAndIsUsedFalseOrderByIdDesc(user, "VERIFICATION"))
                 .orElseThrow(() -> new BadRequestException("No valid OTP found for password reset"));
-        if (!otp.getCode().equals(request.getCode()) || otp.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Invalid or expired OTP code");
+        if (!otp.getCode().equals(request.getCode())) {
+            throw new BadRequestException("Invalid OTP code.");
+        }
+        if (otp.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("OTP code has expired. Please request a new password reset.");
         }
         otp.setUsed(true);
         otpRepository.save(otp);

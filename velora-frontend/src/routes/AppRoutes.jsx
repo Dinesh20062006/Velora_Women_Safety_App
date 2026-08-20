@@ -28,7 +28,6 @@ import Navigation from "../pages/user/route/navigation/Navigation";
 import SafeZones from "../pages/user/safezones/safezones/SafeZones";
 import SafeZoneDetails from "../pages/user/safezones/safezonedetails/SafeZoneDetails";
 
-import AIAssistant from "../pages/user/ai/aiassistant/AIAssistant";
 import SafetyAnalysis from "../pages/user/ai/safetyanalysis/SafetyAnalysis";
 
 import Notification from "../pages/user/notification/Notification";
@@ -97,7 +96,6 @@ function AppRoutes() {
                 <Route path="/safe-zones" element={<SafeZones />} />
                 <Route path="/safe-zone-details" element={<SafeZoneDetails />} />
 
-                <Route path="/ai" element={<AIAssistant />} />
                 <Route path="/ai-analysis" element={<SafetyAnalysis />} />
 
                 <Route path="/notification" element={<Notification />} />

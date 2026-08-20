@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import UserLayout from "../../../../layouts/UserLayout";
 import Button from "../../../../common/Button/Button";
 import {
@@ -16,11 +16,21 @@ import { getSafetyAnalysis } from "../../../../api/aiApi";
 
 function SafetyAnalysis() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentPosition, setCurrentPosition] = useState(null);
   const [mlData, setMlData] = useState(null);
   const [markedZones, setMarkedZones] = useState([]);
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAiChat, setShowAiChat] = useState(() => {
+    return Boolean(location.state?.openChat || location.search.includes("openChat=true"));
+  });
+
+  useEffect(() => {
+    if (location.state?.openChat || location.search.includes("openChat=true")) {
+      setShowAiChat(true);
+    }
+  }, [location]);
 
   const fetchAllSafetyData = async (lat, lng) => {
     setLoading(true);
@@ -107,128 +117,178 @@ function SafetyAnalysis() {
 
   return (
     <UserLayout>
-      <div className="analysis" style={{ paddingBottom: "40px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <div>
-            <h1 style={{ color: "#ffffff", fontSize: "28px", margin: 0 }}>AI Safety & Crime Analytics</h1>
-            <p style={{ color: "#9ca3af", margin: "4px 0 0 0", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
-              <FaMapMarkerAlt style={{ color: "#ec4899" }} /> Live GPS Evaluated: <strong style={{ color: "#f3f4f6" }}>{locationText}</strong>
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => currentPosition && fetchAllSafetyData(currentPosition.lat, currentPosition.lng)}
-            style={{ background: "#1f2937", border: "1px solid #374151", color: "#9ca3af", padding: "8px 14px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-          >
-            <FaSync className={loading ? "spin" : ""} /> {loading ? "Analyzing..." : "Refresh Analytics"}
-          </button>
-        </div>
+      <div className="analysis" style={{ paddingBottom: showAiChat ? "0px" : "40px", height: showAiChat ? "100%" : "auto" }}>
+        {showAiChat ? (
+          <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 110px)", width: "100%" }}>
+            {/* Top Bar for Chatbot Mode */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <button
+                type="button"
+                onClick={() => setShowAiChat(false)}
+                style={{
+                  background: "#1f2937",
+                  border: "1px solid #374151",
+                  color: "#60a5fa",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  fontSize: "13px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+                }}
+              >
+                ← Back to Safety Analytics
+              </button>
+              <span style={{ color: "#10b981", fontSize: "12px", fontWeight: "bold", background: "rgba(16, 185, 129, 0.15)", padding: "4px 12px", borderRadius: "20px", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+                ● Velora AI Smart Assistant (Embedded Mode)
+              </span>
+            </div>
 
-        {/* Graphs & Detailed Analytics Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
-          {/* Radar Chart Card */}
-          <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151" }}>
-            <h3 style={{ fontSize: "16px", color: "#ffffff", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
-              <FaBrain style={{ color: "#6C63FF" }} /> Area Safety Analysis Radar
-            </h3>
-
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
-              <svg width="300" height="280" viewBox="0 0 300 280">
-                {/* Hexagonal Background Grid Circles */}
-                {[0.25, 0.5, 0.75, 1.0].map((scale, idx) => {
-                  const pts = radarVectors.map((_, i) => {
-                    const angle = (i * 60 - 90) * (Math.PI / 180);
-                    const r = scale * 90;
-                    return `${(150 + r * Math.cos(angle)).toFixed(1)},${(140 + r * Math.sin(angle)).toFixed(1)}`;
-                  }).join(" ");
-                  return <polygon key={idx} points={pts} fill="none" stroke="#374151" strokeWidth="1" strokeDasharray={idx < 3 ? "2,2" : undefined} />;
-                })}
-
-                {/* Radar Axis Lines */}
-                {radarVectors.map((_, i) => {
-                  const angle = (i * 60 - 90) * (Math.PI / 180);
-                  const x = 150 + 90 * Math.cos(angle);
-                  const y = 140 + 90 * Math.sin(angle);
-                  return <line key={i} x1="150" y1="140" x2={x} y2={y} stroke="#374151" strokeWidth="1" />;
-                })}
-
-                {/* Data Polygon Fill */}
-                <polygon points={radarPoints} fill="rgba(108, 99, 255, 0.35)" stroke="#6C63FF" strokeWidth="2" />
-
-                {/* Radar Vector Labels */}
-                {radarVectors.map((v, i) => {
-                  const angle = (i * 60 - 90) * (Math.PI / 180);
-                  const lx = 150 + 115 * Math.cos(angle);
-                  const ly = 140 + 115 * Math.sin(angle);
-                  return (
-                    <text
-                      key={i}
-                      x={lx}
-                      y={ly}
-                      fill="#9ca3af"
-                      fontSize="12"
-                      fontWeight="bold"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      {v.label} ({v.score}%)
-                    </text>
-                  );
-                })}
-              </svg>
+            {/* Embedded Chatbot Interface (Image 2 style: Full width & height, no left sidebar) */}
+            <div style={{
+              flex: 1,
+              width: "100%",
+              borderRadius: "14px",
+              overflow: "hidden",
+              border: "1px solid #374151",
+              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
+              background: "#090d16"
+            }}>
+              <iframe
+                src="http://localhost:5174?embed=true"
+                title="Velora AI Assistant Response"
+                style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+              />
             </div>
           </div>
-
-          {/* Crime Report Analytics & Graphs Card */}
-          <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151" }}>
-            <h3 style={{ fontSize: "16px", color: "#ffffff", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
-              <FaChartBar style={{ color: "#ec4899" }} /> Crime Report & Incident Analytics
-            </h3>
-
-            {/* Crime Categories Breakdown Bars */}
-            <div style={{ marginBottom: "20px" }}>
-              <div style={{ fontSize: "13px", color: "#9ca3af", marginBottom: "12px", fontWeight: "600" }}>Incident Category Breakdown</div>
-              {crimeCategories.map((c, i) => (
-                <div key={i} style={{ marginBottom: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#e5e7eb", marginBottom: "4px" }}>
-                    <span>{c.name}</span>
-                    <span style={{ fontWeight: "bold", color: c.color }}>{c.pct}% ({c.count} cases)</span>
-                  </div>
-                  <div style={{ width: "100%", background: "#111827", height: "8px", borderRadius: "4px", overflow: "hidden" }}>
-                    <div style={{ width: `${c.pct}%`, background: c.color, height: "100%", borderRadius: "4px", transition: "width 0.6s ease" }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* AI Insights & Safety Tips Section */}
-        <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151", marginBottom: "24px" }}>
-          <h2 style={{ color: "#ffffff", fontSize: "18px", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
-            <FaBrain style={{ color: "#ec4899" }} /> AI Advisory Insights & Recommendations
-          </h2>
-
-          <div style={{ background: "#111827", padding: "14px 18px", borderRadius: "8px", borderLeft: `4px solid ${color}`, marginBottom: "16px" }}>
-            <p style={{ margin: 0, color: "#f3f4f6", fontSize: "14px", lineHeight: "1.5" }}>
-              💡 <strong>AI Location Advisory:</strong> {mlData?.recommendation || "Location conditions are optimal for travel."}
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
-            {(mlData?.tips || aiAnalysis?.tips || []).map((tip, i) => (
-              <div key={i} style={{ background: "#111827", padding: "12px 14px", borderRadius: "8px", color: "#d1d5db", fontSize: "13px", border: "1px solid #374151" }}>
-                {tip}
+        ) : (
+          <>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div>
+                <h1 style={{ color: "#ffffff", fontSize: "28px", margin: 0 }}>AI Safety & Crime Analytics</h1>
+                <p style={{ color: "#9ca3af", margin: "4px 0 0 0", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <FaMapMarkerAlt style={{ color: "#ec4899" }} /> Live GPS Evaluated: <strong style={{ color: "#f3f4f6" }}>{locationText}</strong>
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
+              <button
+                type="button"
+                onClick={() => currentPosition && fetchAllSafetyData(currentPosition.lat, currentPosition.lng)}
+                style={{ background: "#1f2937", border: "1px solid #374151", color: "#9ca3af", padding: "8px 14px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+              >
+                <FaSync className={loading ? "spin" : ""} /> {loading ? "Analyzing..." : "Refresh Analytics"}
+              </button>
+            </div>
 
-        {/* Action Button */}
-        <div style={{ textAlign: "center" }}>
-          <Button text="Ask AI Safety Assistant" onClick={() => navigate("/ai")} />
-        </div>
+            {/* Graphs & Detailed Analytics Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
+              {/* Radar Chart Card */}
+              <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151" }}>
+                <h3 style={{ fontSize: "16px", color: "#ffffff", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <FaBrain style={{ color: "#6C63FF" }} /> Area Safety Analysis Radar
+                </h3>
+
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
+                  <svg width="300" height="280" viewBox="0 0 300 280">
+                    {/* Hexagonal Background Grid Circles */}
+                    {[0.25, 0.5, 0.75, 1.0].map((scale, idx) => {
+                      const pts = radarVectors.map((_, i) => {
+                        const angle = (i * 60 - 90) * (Math.PI / 180);
+                        const r = scale * 90;
+                        return `${(150 + r * Math.cos(angle)).toFixed(1)},${(140 + r * Math.sin(angle)).toFixed(1)}`;
+                      }).join(" ");
+                      return <polygon key={idx} points={pts} fill="none" stroke="#374151" strokeWidth="1" strokeDasharray={idx < 3 ? "2,2" : undefined} />;
+                    })}
+
+                    {/* Radar Axis Lines */}
+                    {radarVectors.map((_, i) => {
+                      const angle = (i * 60 - 90) * (Math.PI / 180);
+                      const x = 150 + 90 * Math.cos(angle);
+                      const y = 140 + 90 * Math.sin(angle);
+                      return <line key={i} x1="150" y1="140" x2={x} y2={y} stroke="#374151" strokeWidth="1" />;
+                    })}
+
+                    {/* Data Polygon Fill */}
+                    <polygon points={radarPoints} fill="rgba(108, 99, 255, 0.35)" stroke="#6C63FF" strokeWidth="2" />
+
+                    {/* Radar Vector Labels */}
+                    {radarVectors.map((v, i) => {
+                      const angle = (i * 60 - 90) * (Math.PI / 180);
+                      const lx = 150 + 115 * Math.cos(angle);
+                      const ly = 140 + 115 * Math.sin(angle);
+                      return (
+                        <text
+                          key={i}
+                          x={lx}
+                          y={ly}
+                          fill="#9ca3af"
+                          fontSize="12"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          {v.label} ({v.score}%)
+                        </text>
+                      );
+                    })}
+                  </svg>
+                </div>
+              </div>
+
+              {/* Crime Report Analytics & Graphs Card */}
+              <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151" }}>
+                <h3 style={{ fontSize: "16px", color: "#ffffff", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <FaChartBar style={{ color: "#ec4899" }} /> Crime Report & Incident Analytics
+                </h3>
+
+                {/* Crime Categories Breakdown Bars */}
+                <div style={{ marginBottom: "20px" }}>
+                  <div style={{ fontSize: "13px", color: "#9ca3af", marginBottom: "12px", fontWeight: "600" }}>Incident Category Breakdown</div>
+                  {crimeCategories.map((c, i) => (
+                    <div key={i} style={{ marginBottom: "10px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#e5e7eb", marginBottom: "4px" }}>
+                        <span>{c.name}</span>
+                        <span style={{ fontWeight: "bold", color: c.color }}>{c.pct}% ({c.count} cases)</span>
+                      </div>
+                      <div style={{ width: "100%", background: "#111827", height: "8px", borderRadius: "4px", overflow: "hidden" }}>
+                        <div style={{ width: `${c.pct}%`, background: c.color, height: "100%", borderRadius: "4px", transition: "width 0.6s ease" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* AI Insights & Safety Tips Section */}
+            <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151", marginBottom: "24px" }}>
+              <h2 style={{ color: "#ffffff", fontSize: "18px", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FaBrain style={{ color: "#ec4899" }} /> AI Advisory Insights & Recommendations
+              </h2>
+
+              <div style={{ background: "#111827", padding: "14px 18px", borderRadius: "8px", borderLeft: `4px solid ${color}`, marginBottom: "16px" }}>
+                <p style={{ margin: 0, color: "#f3f4f6", fontSize: "14px", lineHeight: "1.5" }}>
+                  💡 <strong>AI Location Advisory:</strong> {mlData?.recommendation || "Location conditions are optimal for travel."}
+                </p>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
+                {(mlData?.tips || aiAnalysis?.tips || []).map((tip, i) => (
+                  <div key={i} style={{ background: "#111827", padding: "12px 14px", borderRadius: "8px", color: "#d1d5db", fontSize: "13px", border: "1px solid #374151" }}>
+                    {tip}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div style={{ textAlign: "center" }}>
+              <Button text="🤖 Ask AI Safety Assistant (Open Chat Response)" onClick={() => setShowAiChat(true)} />
+            </div>
+          </>
+        )}
       </div>
     </UserLayout>
   );

@@ -152,7 +152,7 @@ function SafeZoneDetails() {
                 };
             })
             .filter((h) => h.isGreen)
-            .filter((h) => !currentPosition || h.distanceKm <= 10.0 || realtimeMLZones.length <= 5);
+            .filter((h) => !currentPosition || h.distanceKm <= 50.0 || realtimeMLZones.length <= 10);
     }, [realtimeMLZones, currentPosition]);
 
     /* List ALL non-duplicate green safe zones strictly in ASCENDING order of distance */
@@ -244,7 +244,7 @@ function SafeZoneDetails() {
                 <div className="zone-map-card" style={{ marginBottom: "24px", height: "320px", borderRadius: "12px", overflow: "hidden" }}>
                     <MapErrorBoundary>
                         {hasMapsApiKey && currentPosition ? (
-                            <APIProvider apiKey={mapsApiKey}>
+                            <APIProvider apiKey={mapsApiKey} language="en">
                                 <Map
                                     center={currentPosition}
                                     defaultCenter={currentPosition}

@@ -492,7 +492,7 @@ export default function PoliceSosRoute() {
         {/* Live Interactive Navigation Route Map */}
         <div style={{ width: "100%", height: "550px", borderRadius: "12px", overflow: "hidden", border: "1px solid #374151" }}>
           {mapsApiKey ? (
-            <APIProvider apiKey={mapsApiKey}>
+            <APIProvider apiKey={mapsApiKey} language="en">
               <Map
                 defaultCenter={mapCenter}
                 defaultZoom={13}

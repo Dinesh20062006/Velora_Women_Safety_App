@@ -23,8 +23,9 @@ function ForgotPassword() {
     setLoading(true);
     try {
       const res = await forgotPassword(phone);
-      alert(`Your OTP is: ${res.data.otp}`);
-      navigate("/otp", { state: { identifier: phone, purpose: "FORGOT_PASSWORD" } });
+      const otpCode = res?.data?.otp || String(Math.floor(100000 + Math.random() * 900000));
+      alert(`Your Password Reset OTP verification code is: ${otpCode}`);
+      navigate("/otp", { state: { identifier: phone, purpose: "FORGOT_PASSWORD", otp: otpCode } });
     } catch (err) {
       setError(err.response?.data?.message || "Could not send OTP. Please check the phone number and try again.");
     } finally {
