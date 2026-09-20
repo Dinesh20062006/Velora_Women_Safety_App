@@ -129,7 +129,7 @@ function Dashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
+  const mapsApiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyDItZ2VwmsQQv7HFaS5qgMTjCeOC0nBifI")?.trim();
 
   return (
     <UserLayout>

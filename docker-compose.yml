@@ -225,6 +225,10 @@ services:
     build:
       context: ./velora-frontend
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_MAPS_API_KEY: AIzaSyDItZ2VwmsQQv7HFaS5qgMTjCeOC0nBifI
+        VITE_API_BASE_URL: http://localhost:8080/api/v1
+        VITE_ML_SERVICE_URL: http://localhost:8000
     container_name: velora-frontend
     restart: unless-stopped
     ports:

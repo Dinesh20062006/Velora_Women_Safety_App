@@ -227,7 +227,7 @@ function Riskzone() {
     fetchDBAlerts();
   }, []);
 
-  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
+  const mapsApiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyDItZ2VwmsQQv7HFaS5qgMTjCeOC0nBifI")?.trim();
   const hasMapsApiKey = Boolean(mapsApiKey);
 
   // Navigate Action: Opens dedicated Police Map Navigation page directly to the citizen's SOS location & updates database dispatch status

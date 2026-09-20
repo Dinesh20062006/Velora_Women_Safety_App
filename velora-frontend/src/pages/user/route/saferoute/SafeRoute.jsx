@@ -209,7 +209,7 @@ function SafeRoute() {
     });
     const [recenterCount, setRecenterCount] = useState(0);
 
-    const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
+    const mapsApiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyDItZ2VwmsQQv7HFaS5qgMTjCeOC0nBifI")?.trim();
     const hasMapsApiKey = Boolean(mapsApiKey);
 
     // Reverse geocode lat/lng to readable location (Enforced English ONLY)

@@ -52,7 +52,7 @@ function ReportIncident() {
     const [gettingGps, setGettingGps] = useState(false);
     const [error, setError] = useState("");
 
-    const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
+    const mapsApiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyDItZ2VwmsQQv7HFaS5qgMTjCeOC0nBifI")?.trim();
     const hasMapsApiKey = Boolean(mapsApiKey);
 
     // Reverse geocode to convert lat/lng to readable location address (Enforced English ONLY)
