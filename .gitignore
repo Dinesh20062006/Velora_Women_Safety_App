@@ -1,4 +1,16 @@
-velora-frontend/.env
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+target/
+**/target/
+bin/
+**/bin/
 .venv/
 __pycache__/
+**/__pycache__/
 *.pyc
+*.class
+velora-frontend/.env
+.env
+.env.local
