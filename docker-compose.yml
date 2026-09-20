@@ -1,0 +1,245 @@
+services:
+  # ==========================================
+  # 1. DATABASE
+  # ==========================================
+  mysql:
+    image: mysql:8.0
+    container_name: velora-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: velora_db
+      MYSQL_ROOT_PASSWORD: Root@123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - velora-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pRoot@123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==========================================
+  # 2. PYTHON FASTAPI ML SERVICE
+  # ==========================================
+  velora-ml-service:
+    build:
+      context: ./velora-ml-service
+      dockerfile: Dockerfile
+    container_name: velora-ml-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - velora-network
+
+  # ==========================================
+  # 3. BACKEND MICROSERVICES
+  # ==========================================
+  velora-auth-service:
+    build:
+      context: ./velora-backend/velora-auth-service
+      dockerfile: Dockerfile
+    container_name: velora-auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  velora-user-service:
+    build:
+      context: ./velora-backend/velora-user-service
+      dockerfile: Dockerfile
+    container_name: velora-user-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  velora-safety-service:
+    build:
+      context: ./velora-backend/velora-safety-service
+      dockerfile: Dockerfile
+    container_name: velora-safety-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  velora-ai-service:
+    build:
+      context: ./velora-backend/velora-ai-service
+      dockerfile: Dockerfile
+    container_name: velora-ai-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  velora-notification-service:
+    build:
+      context: ./velora-backend/velora-notification-service
+      dockerfile: Dockerfile
+    container_name: velora-notification-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  velora-police-service:
+    build:
+      context: ./velora-backend/velora-police-service
+      dockerfile: Dockerfile
+    container_name: velora-police-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  velora-admin-service:
+    build:
+      context: ./velora-backend/velora-admin-service
+      dockerfile: Dockerfile
+    container_name: velora-admin-service
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  velora-complient-service:
+    build:
+      context: ./velora-backend/velora-complient-service
+      dockerfile: Dockerfile
+    container_name: velora-complient-service
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      DB_URL: jdbc:mysql://velora-mysql:3306/velora_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: Root@123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - velora-network
+
+  # ==========================================
+  # 4. SPRING CLOUD API GATEWAY
+  # ==========================================
+  velora-api-gateway:
+    build:
+      context: ./velora-backend/velora-api-gateway
+      dockerfile: Dockerfile
+    container_name: velora-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH_SERVICE_URL: http://velora-auth-service:8081
+      USER_SERVICE_URL: http://velora-user-service:8082
+      SAFETY_SERVICE_URL: http://velora-safety-service:8083
+      AI_SERVICE_URL: http://velora-ai-service:8084
+      MAP_SERVICE_URL: http://velora-ai-service:8084
+      NOTIFICATION_SERVICE_URL: http://velora-notification-service:8085
+      POLICE_SERVICE_URL: http://velora-police-service:8086
+      ADMIN_SERVICE_URL: http://velora-admin-service:8087
+      COMPLAINT_SERVICE_URL: http://velora-complient-service:8088
+    depends_on:
+      - velora-auth-service
+      - velora-user-service
+      - velora-safety-service
+      - velora-ai-service
+      - velora-notification-service
+      - velora-police-service
+      - velora-admin-service
+      - velora-complient-service
+    networks:
+      - velora-network
+
+  # ==========================================
+  # 5. FRONTEND (REACT + VITE + NGINX)
+  # ==========================================
+  velora-frontend:
+    build:
+      context: ./velora-frontend
+      dockerfile: Dockerfile
+    container_name: velora-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      - velora-api-gateway
+      - velora-ml-service
+    networks:
+      - velora-network
+
+networks:
+  velora-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
