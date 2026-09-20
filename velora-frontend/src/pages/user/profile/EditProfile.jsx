@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { FiSave, FiCheckCircle } from "react-icons/fi";
 import user from "../../../assets/images/user.png";
 import { getProfile, updateProfile } from "../../../api/profileApi";
-import { getFileUrl } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
 
 function EditProfile() {

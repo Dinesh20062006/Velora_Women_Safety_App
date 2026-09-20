@@ -10,12 +10,12 @@ const mlClient = axios.create({
 });
 
 // Circuit-breaker for ML Microservice to avoid connection error floods when service is offline
-let isMlServerAvailable = false;
+let isMlServerAvailable = true;
 let lastMlCheckTime = 0;
-const CHECK_COOLDOWN_MS = 60000;
+const CHECK_COOLDOWN_MS = 30000;
 
 export function canCheckMlServer() {
-  if (!isMlServerAvailable && lastMlCheckTime === 0) return false;
+  if (lastMlCheckTime === 0) return true;
   if (isMlServerAvailable) return true;
   return Date.now() - lastMlCheckTime > CHECK_COOLDOWN_MS;
 }

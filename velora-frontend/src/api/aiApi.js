@@ -1,5 +1,4 @@
 import axios from "axios";
-import client from "./client";
 import { canCheckMlServer, markMlServerOffline, markMlServerOnline } from "./mlSafetyApi";
 
 export const predictRisk = async (latitude, longitude) => {

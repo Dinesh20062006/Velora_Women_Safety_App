@@ -8,7 +8,6 @@ import user from "../../../assets/images/user.png";
 import { getProfile } from "../../../api/profileApi";
 import { getEmergencyContacts } from "../../../api/emergencyContactApi";
 import { getMyReports } from "../../../api/reportApi";
-import { getFileUrl } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
 
 import {

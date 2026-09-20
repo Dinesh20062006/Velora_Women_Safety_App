@@ -1,4 +1,4 @@
-import police_logo from '/src/assets/image/Tamil_Nadu_Police_Logo.png';
+import police_logo from '../../../assets/image/Tamil_Nadu_Police_Logo.png';
 
 function TopNavbar() {
   return (

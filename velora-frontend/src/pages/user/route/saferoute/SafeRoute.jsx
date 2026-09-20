@@ -224,7 +224,9 @@ function SafeRoute() {
                 const shortAddress = parts.slice(0, 3).join(", ");
                 return `📍 Current Location (${shortAddress || cleanDisplayName})`;
             }
-        } catch {}
+        } catch (e) {
+            console.debug("Reverse geocode fallback", e);
+        }
         return `📍 Current Location (${lat.toFixed(4)}°, ${lng.toFixed(4)}°)`;
     };
 

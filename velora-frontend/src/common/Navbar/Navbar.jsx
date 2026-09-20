@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { IoNotificationsOutline, IoPersonCircleOutline } from "react-icons/io5";
+import { IoNotificationsOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import velora_logo from "../../assets/logos/velora-icon.png";
 import { getUnreadCount } from "../../api/notificationApi";
 import { useAuth } from "../../context/AuthContext";
-import { getFileUrl } from "../../api/client";
 import userAvatar from "../../assets/images/user.png";
 
 function Navbar() {

@@ -8,9 +8,7 @@ from typing import List, Optional
 import uvicorn
 import math
 import random
-from datetime import datetime, timedelta
-from urllib.parse import unquote
-import string
+from datetime import datetime
 import requests
 
 app = FastAPI(
@@ -532,7 +530,6 @@ async def ai_chat_endpoint(input_data: AIChatInput):
     # 1. Try Google Gemini API from Python backend (if valid key set)
     gemini_key = os.getenv("VITE_GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
     if gemini_key and len(gemini_key.strip()) > 15 and not gemini_key.startswith("AQ."):
-        import requests
         system_prompt = "You are Velora AI, an intelligent 24/7 Women's Safety Assistant. Provide short, clear, highly structured, empathetic, and actionable safety guidance for emergency instructions, safe route precautions, self-defense tactics, helpline numbers, and incident prevention. Format your response with clear bullet points, bold headings, and helpful emojis."
         
         models = ["gemini-3.6-flash", "gemini-flash-latest"]

@@ -1,0 +1,225 @@
+/* Scoped Velora AI Chatbot Stylesheet - Seamless Velora Design System Integration */
+.velora-chatbot-root {
+  --cb-bg: #111827;
+  --cb-surface-1: #1f2937;
+  --cb-surface-2: #1e293b;
+  --cb-surface-3: #374151;
+  --cb-surface-hover: rgba(255, 255, 255, 0.05);
+  --cb-border: #374151;
+  --cb-border-active: rgba(99, 102, 241, 0.6);
+  --cb-text-main: #f3f4f6;
+  --cb-text-muted: #9ca3af;
+  --cb-text-dim: #6b7280;
+  --cb-accent: #6366f1;
+  --cb-accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #0ea5e9 100%);
+  --cb-user-bg: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  --cb-bot-bg: #1f2937;
+
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background-color: #111827;
+  color: var(--cb-text-main);
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid #1f2937;
+  font-family: inherit;
+}
+
+.velora-chatbot-root * {
+  box-sizing: border-box;
+}
+
+/* Glass Panels & Cards */
+.velora-chatbot-root .cb-glass-panel {
+  background: var(--cb-surface-1);
+  border-bottom: 1px solid var(--cb-border);
+}
+
+.velora-chatbot-root .cb-glass-card {
+  background: #111827;
+  border: 1px solid var(--cb-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.velora-chatbot-root .cb-glass-card:hover {
+  border-color: var(--cb-border-active);
+  transform: translateY(-2px);
+  background: #1a2234;
+}
+
+/* Gradient Text */
+.velora-chatbot-root .cb-gradient-text {
+  background: var(--cb-accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Buttons */
+.velora-chatbot-root .cb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--cb-text-main);
+}
+
+.velora-chatbot-root .cb-btn-secondary {
+  background: #1f2937;
+  border-color: var(--cb-border);
+}
+
+.velora-chatbot-root .cb-btn-secondary:hover {
+  background: var(--cb-surface-hover);
+  border-color: #4b5563;
+}
+
+.velora-chatbot-root .cb-btn-primary {
+  background: var(--cb-accent-gradient);
+  color: #ffffff;
+}
+
+.velora-chatbot-root .cb-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.velora-chatbot-root .cb-btn-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1f2937;
+  border: 1px solid var(--cb-border);
+  color: var(--cb-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.velora-chatbot-root .cb-btn-icon:hover {
+  color: var(--cb-text-main);
+  border-color: #4b5563;
+}
+
+/* Pills & Badges */
+.velora-chatbot-root .cb-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.velora-chatbot-root .cb-badge-db {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Message Markdown Styling */
+.velora-chatbot-root .cb-markdown-content {
+  line-height: 1.6;
+  font-size: 0.92rem;
+}
+
+.velora-chatbot-root .cb-markdown-content p {
+  margin: 0 0 10px 0;
+}
+
+.velora-chatbot-root .cb-markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.velora-chatbot-root .cb-markdown-content ul,
+.velora-chatbot-root .cb-markdown-content ol {
+  margin: 8px 0 12px 20px;
+  padding: 0;
+}
+
+.velora-chatbot-root .cb-markdown-content li {
+  margin-bottom: 4px;
+}
+
+.velora-chatbot-root .cb-markdown-content h1,
+.velora-chatbot-root .cb-markdown-content h2,
+.velora-chatbot-root .cb-markdown-content h3 {
+  color: #ffffff;
+  margin: 14px 0 8px 0;
+  font-size: 1.05rem;
+}
+
+.velora-chatbot-root .cb-markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.85rem;
+}
+
+.velora-chatbot-root .cb-markdown-content th,
+.velora-chatbot-root .cb-markdown-content td {
+  border: 1px solid var(--cb-border);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.velora-chatbot-root .cb-markdown-content th {
+  background: var(--cb-surface-3);
+  color: #ffffff;
+}
+
+.velora-chatbot-root .cb-markdown-content code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+  color: #38bdf8;
+}
+
+.velora-chatbot-root .cb-markdown-content pre code {
+  display: block;
+  padding: 12px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: #0b0f17;
+}
+
+/* Animations */
+@keyframes cbFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.velora-chatbot-root .cb-animate-fade {
+  animation: cbFadeIn 0.2s ease forwards;
+}
+
+/* Scrollbars */
+.velora-chatbot-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.velora-chatbot-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.velora-chatbot-root ::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 9999px;
+}
+.velora-chatbot-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--cb-accent);
+}

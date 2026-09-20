@@ -29,7 +29,9 @@ const getReadNotificationIds = () => {
 const saveReadNotificationIds = (readSet) => {
   try {
     localStorage.setItem("velora_read_notification_ids", JSON.stringify(Array.from(readSet)));
-  } catch {}
+  } catch (e) {
+    console.debug("Failed to save read notification IDs", e);
+  }
 };
 
 const isPoliceDispatch = (n) => {
@@ -181,7 +183,9 @@ export const getNotifications = async (page = 0, size = 20) => {
         customList.forEach(addNotification);
       }
     }
-  } catch {}
+  } catch (e) {
+    console.debug("Failed to read custom notifications", e);
+  }
 
   try {
     const rawLocalSos = localStorage.getItem("velora_sos_history");
@@ -204,7 +208,9 @@ export const getNotifications = async (page = 0, size = 20) => {
         });
       }
     }
-  } catch {}
+  } catch (e) {
+    console.debug("Failed to read local SOS history", e);
+  }
 
   // Sort all notifications by timestamp descending (newest first)
   mergedList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -241,7 +247,9 @@ export const markNotificationRead = async (id) => {
           localStorage.setItem("velora_custom_notifications", JSON.stringify(updated));
         }
       }
-    } catch {}
+    } catch (e) {
+      console.debug("Failed to update custom notification read status", e);
+    }
 
     window.dispatchEvent(new Event("notifications_updated"));
   }
@@ -265,7 +273,9 @@ export const markAllNotificationsRead = async (ids = []) => {
       (res.data || []).forEach((n) => {
         if (n.id) readSet.add(String(n.id));
       });
-    } catch {}
+    } catch (e) {
+      console.debug("Failed to get notifications for markAllNotificationsRead", e);
+    }
   }
   saveReadNotificationIds(readSet);
 
@@ -278,7 +288,9 @@ export const markAllNotificationsRead = async (ids = []) => {
         localStorage.setItem("velora_custom_notifications", JSON.stringify(updated));
       }
     }
-  } catch {}
+  } catch (e) {
+    console.debug("Failed to update all custom notifications to read", e);
+  }
 
   window.dispatchEvent(new Event("notifications_updated"));
 

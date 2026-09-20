@@ -15,10 +15,8 @@ import {
   IoLocationOutline,
   IoPersonOutline,
   IoImageOutline,
-  IoTrashOutline,
   IoTimeOutline,
   IoSearchOutline,
-  IoShieldCheckmarkOutline,
   IoMapOutline
 } from "react-icons/io5";
 
@@ -57,16 +55,6 @@ function SafeZoneManagement() {
     return () => clearInterval(interval);
   }, []);
 
-  const handlePoliceStatusChange = async (id, newStatus) => {
-    try {
-      await updateEscalatedCaseStatus(id, newStatus);
-      setPoliceCases((prev) =>
-        prev.map((c) => (String(c.id || c.complaintId) === String(id) ? { ...c, adminStatus: newStatus } : c))
-      );
-    } catch (e) {
-      console.error("Failed to update police case status", e);
-    }
-  };
 
   const handlePoliceDelete = async (id) => {
     if (window.confirm("Remove this report from the Admin page? (The underlying data will be preserved in records)")) {
@@ -620,20 +608,6 @@ function SafeZoneManagement() {
                 const cId = item.complaintId || item.id;
                 const displayStatus = item.adminStatus || "PENDING_ADMIN_REVIEW";
 
-                let statusBg = "rgba(239, 68, 68, 0.15)";
-                let statusColor = "#ef4444";
-                let statusBorder = "#dc2626";
-
-                if (displayStatus === "UNDER_REVIEW") {
-                  statusBg = "rgba(245, 158, 11, 0.15)";
-                  statusColor = "#f59e0b";
-                  statusBorder = "#d97706";
-                } else if (displayStatus === "ACTION_TAKEN" || displayStatus === "RESOLVED") {
-                  statusBg = "rgba(16, 185, 129, 0.15)";
-                  statusColor = "#10b981";
-                  statusBorder = "#059669";
-                }
-
                 return (
                   <div
                     key={cId}
@@ -674,7 +648,7 @@ function SafeZoneManagement() {
 
                       {/* From & Date */}
                       <div style={{ fontSize: "11px", color: "#9ca3af", marginBottom: "14px" }}>
-                        👮 From: <strong>{item.escalatedByOfficer || "Police Officer"}</strong> | <IoTimeOutline style={{ verticalAlign: "middle" }} /> {new Date(item.escalatedAt || Date.now()).toLocaleDateString()}
+                        👮 From: <strong>{item.escalatedByOfficer || "Police Officer"}</strong> | <IoTimeOutline style={{ verticalAlign: "middle" }} /> {item.escalatedAt ? new Date(item.escalatedAt).toLocaleDateString() : "Recently"}
                       </div>
 
                       {/* Optional Photo */}

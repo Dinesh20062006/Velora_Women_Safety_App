@@ -1,5 +1,5 @@
 import { useState } from "react";
-import forgotImage from "/src/assets/image/forgot-password.png";
+import forgotImage from "../../../assets/image/forgot-password.png";
 import { useNavigate } from "react-router-dom";
 import { policeForgotPassword } from "../../../api/policeApi";
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import police_logo from "/src/assets/image/Tamil_Nadu_Police_Logo.png";
-import velora_logo from "/src/assets/image/velora-trans.png";
+import police_logo from "../../../assets/image/Tamil_Nadu_Police_Logo.png";
+import velora_logo from "../../../assets/image/velora-trans.png";
 import { useNavigate } from "react-router-dom";
 import { policeRegister } from "../../../api/policeApi";
 import { useAuth } from "../../../context/AuthContext";

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import otpImage from "/src/assets/image/otp-banner.png";
+import otpImage from "../../../assets/image/otp-banner.png";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { policeVerifyOtp } from "../../../api/policeApi";
 import { resendOtp, resetPassword } from "../../../api/authApi";
@@ -13,7 +13,7 @@ function OTP() {
   const { identifier, phone, purpose, email, otp: stateOtp } = location.state || {};
   const targetId = identifier || phone;
 
-  const [currentOtp, setCurrentOtp] = useState(stateOtp || "123456");
+  const [, setCurrentOtp] = useState(stateOtp || "123456");
 
   const inputsRef = useRef([]);
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);

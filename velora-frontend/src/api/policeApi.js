@@ -244,7 +244,7 @@ export const getRegisteredPoliceOfficers = async () => {
         mobileNumber: u.mobileNumber || u.phone
       }));
     }
-  } catch (err) {
+  } catch {
     try {
       const direct = await axios.get("http://localhost:8087/api/v1/admin/users");
       const list = Array.isArray(direct?.data) ? direct.data : (direct?.data?.data || []);

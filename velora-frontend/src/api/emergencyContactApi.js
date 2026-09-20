@@ -14,7 +14,9 @@ const getLocalContacts = () => {
 const saveLocalContacts = (contacts) => {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contacts));
-  } catch {}
+  } catch (e) {
+    console.debug("Failed to save local contacts", e);
+  }
 };
 
 export const getEmergencyContacts = async () => {
@@ -51,7 +53,7 @@ export const addEmergencyContact = async (payload) => {
     primary: payload.primary || payload.isPrimary || false
   };
 
-  let newContact = null;
+  let newContact;
   try {
     const res = await client.post("/users/emergency-contacts", body);
     newContact = res.data;

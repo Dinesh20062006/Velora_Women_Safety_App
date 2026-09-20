@@ -5,8 +5,7 @@ import {
   IoPeopleOutline,
   IoShieldCheckmarkOutline,
   IoPulseOutline,
-  IoLogOutOutline,
-  IoDocumentTextOutline
+  IoLogOutOutline
 } from "react-icons/io5";
 
 function AdminSidebar({ collapse }) {

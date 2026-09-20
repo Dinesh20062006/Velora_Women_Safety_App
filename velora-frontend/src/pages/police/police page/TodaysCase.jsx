@@ -6,10 +6,8 @@ import { getAllUsers } from "../../../api/adminApi";
 function TodaysCase() {
   const [sosList, setSosList] = useState([]);
   const [incidentsList, setIncidentsList] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchAnalyticsData = async (isInitial = false) => {
-    if (isInitial) setLoading(true);
+  const fetchAnalyticsData = async () => {
     try {
       const [sosRes, incRes, userListRes] = await Promise.allSettled([
         getActiveSosAlerts(),
@@ -71,8 +69,6 @@ function TodaysCase() {
 
     } catch (err) {
       console.error("Failed to load today's cases analytics", err);
-    } finally {
-      if (isInitial) setLoading(false);
     }
   };
 
@@ -99,15 +95,14 @@ function TodaysCase() {
 
   // 1. SOS Location Analytics Calculations
   const sosLocationMap = {};
-  sosList.forEach((s) => {
-    let locName = "Location Recorded";
-    const addr = (s.address || s.location || "").toString();
-    if (/karpagam|college|eachanari/i.test(addr)) locName = "Karpagam Campus / Eachanari";
-    else if (/peelamedu|hope|tidel/i.test(addr)) locName = "Peelamedu Tech Hub";
-    else if (/sundarapuram|sidco/i.test(addr)) locName = "Sundarapuram Industrial";
-    else if (/gandhipuram|bus/i.test(addr)) locName = "Gandhipuram Sector";
-    else if (addr && addr !== "Live GPS Location") locName = addr.split(",")[0];
-    else if (s.latitude && s.longitude) locName = `GPS (${s.latitude.toFixed(2)}, ${s.longitude.toFixed(2)})`;
+  sosList.forEach((sos) => {
+    let locName = "General Location";
+    const locStr = (sos.location || "").toString();
+    if (/karpagam|campus|college/i.test(locStr)) locName = "College Campus Hub";
+    else if (/peelamedu|tech|it/i.test(locStr)) locName = "Peelamedu Tech Park";
+    else if (/gandhipuram|bus|station/i.test(locStr)) locName = "Transit / Bus Station Hub";
+    else if (/main road|expressway/i.test(locStr)) locName = "Expressway Safety Sector";
+    else if (locStr) locName = locStr.split(",")[0];
     sosLocationMap[locName] = (sosLocationMap[locName] || 0) + 1;
   });
 
@@ -119,7 +114,7 @@ function TodaysCase() {
 
   // Conic gradient string for SOS Location Pie Chart
   let sosLocAcc = 0;
-  const sosLocConicParts = sosLocEntries.map(([_, val], i) => {
+  const sosLocConicParts = sosLocEntries.map(([, val], i) => {
     const startDeg = (sosLocAcc / (totalSosLoc || 1)) * 360;
     sosLocAcc += val;
     const endDeg = (sosLocAcc / (totalSosLoc || 1)) * 360;
@@ -131,7 +126,11 @@ function TodaysCase() {
   const incLocationMap = {};
   incidentsList.forEach((inc) => {
     let locName = "General Location";
-    const locStr = (typeof inc.location === "object" ? inc.location?.address : (inc.address || inc.location || inc.category || "")).toString();
+    const locStr = String(
+      (typeof inc.location === "object" && inc.location !== null)
+        ? (inc.location.address || inc.location.city || "")
+        : (inc.address || inc.location || inc.category || "")
+    );
     if (/karpagam|campus|college/i.test(locStr)) locName = "College Campus Zone";
     else if (/peelamedu|tech|it/i.test(locStr)) locName = "Peelamedu Tech Park";
     else if (/gandhipuram|bus|station/i.test(locStr)) locName = "Transit / Bus Station Hub";
@@ -145,7 +144,7 @@ function TodaysCase() {
   const totalIncLoc = incLocEntries.reduce((sum, [, val]) => sum + val, 0);
 
   let incLocAcc = 0;
-  const incLocConicParts = incLocEntries.map(([_, val], i) => {
+  const incLocConicParts = incLocEntries.map(([, val], i) => {
     const startDeg = (incLocAcc / totalIncLoc) * 360;
     incLocAcc += val;
     const endDeg = (incLocAcc / totalIncLoc) * 360;

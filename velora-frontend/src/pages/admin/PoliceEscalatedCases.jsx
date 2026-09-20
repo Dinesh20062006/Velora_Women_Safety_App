@@ -12,9 +12,7 @@ import {
   IoShieldCheckmarkOutline,
   IoImageOutline,
   IoTrashOutline,
-  IoTimeOutline,
-  IoDocumentTextOutline,
-  IoCheckmarkCircleOutline
+  IoTimeOutline
 } from "react-icons/io5";
 
 function PoliceEscalatedCases() {
@@ -221,7 +219,7 @@ function PoliceEscalatedCases() {
                     {/* Escalation Meta (Police Officer & Time) */}
                     <div style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "14px", display: "flex", flexDirection: "column", gap: "4px" }}>
                       <div>👮 Escalated By: <strong style={{ color: "#f8fafc" }}>{item.escalatedByOfficer || "Police Officer"}</strong></div>
-                      <div><IoTimeOutline style={{ verticalAlign: "middle", marginRight: "4px" }} /> Escalated On: {new Date(item.escalatedAt || Date.now()).toLocaleString()}</div>
+                      <div><IoTimeOutline style={{ verticalAlign: "middle", marginRight: "4px" }} /> Escalated On: {item.escalatedAt ? new Date(item.escalatedAt).toLocaleString() : "Recently"}</div>
                     </div>
 
                     {/* Evidence Photo Preview */}

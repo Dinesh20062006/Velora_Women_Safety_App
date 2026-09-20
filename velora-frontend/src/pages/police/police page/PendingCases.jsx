@@ -15,8 +15,7 @@ import {
   IoImageOutline,
   IoCheckmarkCircleOutline,
   IoTimeOutline,
-  IoAlertCircleOutline,
-  IoSendOutline
+  IoAlertCircleOutline
 } from "react-icons/io5";
 
 function PendingCases() {
@@ -363,8 +362,6 @@ function PendingCases() {
               const isEscalated = escalatedCaseIds.includes(String(cId));
               const currentStatus = (item.status || "PENDING").toUpperCase();
               const currentOfficer = item.assignedOfficerId || item.assignedOfficer || item.officerId || "";
-              const assignedOfficerObj = officers.find(o => String(o.id || o.policeId) === String(currentOfficer));
-              const assignedOfficerName = assignedOfficerObj ? assignedOfficerObj.name : (item.assignedOfficerName || "Unassigned");
 
               const isResolved = currentStatus === "RESOLVED";
               const isInvestigating = currentStatus === "UNDER_INVESTIGATION" || currentStatus === "IN_PROGRESS" || currentStatus === "ASSIGNED";

@@ -1,4 +1,4 @@
-import velora_logo from '/src/assets/image/velora-trans.png';
+import velora_logo from '../../assets/image/velora-trans.png';
 
 function AdminTopNavbar() {
   return (

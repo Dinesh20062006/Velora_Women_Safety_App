@@ -193,8 +193,8 @@ function PoliceRouteRenderer({ origin, destination, onRouteFound }) {
         }
       }
 
-      // 3. Keep dotted line if no road route available
-      drawDottedFallbackPolyline();
+      // 3. Keep fallback polyline if no road route available
+      drawRoutePolyline();
     };
 
     const timer = setTimeout(() => {

@@ -4,11 +4,9 @@ import signupImage from "../../../../assets/images/signup-banner.png";
 import Input from "../../../../common/Input/Input";
 import Button from "../../../../common/Button/Button";
 import { signup, sendOtp } from "../../../../api/authApi";
-import { useAuth } from "../../../../context/AuthContext";
 
 function Signup() {
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");

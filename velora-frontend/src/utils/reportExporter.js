@@ -270,15 +270,15 @@ export function downloadFullCaseHistoryReport(cases, officers = []) {
   const headers = ["Case ID", "Victim/Reporter Name", "Category", "Location", "Status", "Assigned Officer", "Photo Evidence URL", "Timestamp"];
   const rows = cases.map(c => {
     const cId = c.complaintId || c.id || "";
-    const reporter = c.userName || c.title || c.victimName || "Citizen User";
-    const category = c.category || c.type || "GENERAL";
-    const loc = typeof c.location === "object" ? c.location?.address : (c.location || c.address || "");
-    const status = (c.status || "PENDING").toUpperCase();
+    const reporter = String(c.userName || c.title || c.victimName || "Citizen User");
+    const category = String(c.category || c.type || "GENERAL");
+    const loc = String(typeof c.location === "object" ? (c.location?.address || "") : (c.location || c.address || ""));
+    const status = String(c.status || "PENDING").toUpperCase();
     const officerId = c.assignedOfficerId || c.assignedOfficer || c.officerId || "";
     const officerObj = officers.find(o => String(o.id || o.policeId) === String(officerId));
-    const officerName = officerObj ? officerObj.name : (c.assignedOfficerName || "Unassigned");
-    const photo = c.imageUrl || "None";
-    const time = c.createdAt || c.createdDate || c.timestamp || "";
+    const officerName = String(officerObj ? officerObj.name : (c.assignedOfficerName || "Unassigned"));
+    const photo = String(c.imageUrl || "None");
+    const time = String(c.createdAt || c.createdDate || c.timestamp || "");
 
     return [
       `"INC-${cId}"`,
@@ -287,8 +287,8 @@ export function downloadFullCaseHistoryReport(cases, officers = []) {
       `"${loc.replace(/"/g, '""')}"`,
       `"${status}"`,
       `"${officerName.replace(/"/g, '""')}"`,
-      `"${photo}"`,
-      `"${time}"`
+      `"${photo.replace(/"/g, '""')}"`,
+      `"${time.replace(/"/g, '""')}"`
     ].join(",");
   });
 

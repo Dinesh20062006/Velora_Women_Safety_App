@@ -11,11 +11,15 @@
   },
   "dependencies": {
     "@vis.gl/react-google-maps": "^1.9.0",
+    "axios": "^1.7.9",
+    "canvas-confetti": "^1.9.4",
+    "lucide-react": "^1.47.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-icons": "^5.6.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.0",
-    "axios": "^1.7.9"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

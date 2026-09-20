@@ -1,2 +1,4 @@
-
 velora-frontend/.env
+.venv/
+__pycache__/
+*.pyc

@@ -89,8 +89,6 @@ function NavigationRoute({
         const calculateRoute = async () => {
             clearRoute();
 
-            let resolvedDestination = null;
-
             try {
                 const result =
                     await routesLibrary.Route.computeRoutes({
@@ -134,7 +132,7 @@ function NavigationRoute({
                     }
 
                     const lastPoint = route.path[route.path.length - 1];
-                    resolvedDestination = {
+                    const resolvedDestination = {
                         lat: typeof lastPoint.lat === "function" ? lastPoint.lat() : lastPoint.lat,
                         lng: typeof lastPoint.lng === "function" ? lastPoint.lng() : lastPoint.lng
                     };

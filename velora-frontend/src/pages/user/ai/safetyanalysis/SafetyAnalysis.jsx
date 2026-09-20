@@ -1,34 +1,34 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import UserLayout from "../../../../layouts/UserLayout";
 import Button from "../../../../common/Button/Button";
 import {
   FaBrain,
-  FaShieldAlt,
-  FaExclamationTriangle,
   FaMapMarkerAlt,
   FaChartBar,
   FaSync
 } from "react-icons/fa";
 
-import { predictMLSafetyScore, fetchRealtimeMLMarkedZones } from "../../../../api/mlSafetyApi";
+import { predictMLSafetyScore } from "../../../../api/mlSafetyApi";
 import { getSafetyAnalysis } from "../../../../api/aiApi";
+import VeloraChatbot from "../../../../components/chatbot/VeloraChatbot";
 
 function SafetyAnalysis() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [currentPosition, setCurrentPosition] = useState(null);
   const [mlData, setMlData] = useState(null);
-  const [markedZones, setMarkedZones] = useState([]);
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showAiChat, setShowAiChat] = useState(() => {
-    return Boolean(location.state?.openChat || location.search.includes("openChat=true"));
+
+  // Tab state: "chat" (AI Assistant) or "analytics" (Radar & Crime breakdown)
+  const [activeTab, setActiveTab] = useState(() => {
+    // Default to chat if requested or default tab
+    return "chat";
   });
 
   useEffect(() => {
     if (location.state?.openChat || location.search.includes("openChat=true")) {
-      setShowAiChat(true);
+      setActiveTab("chat");
     }
   }, [location]);
 
@@ -39,18 +39,13 @@ function SafetyAnalysis() {
     setCurrentPosition({ lat: effectiveLat, lng: effectiveLng });
 
     try {
-      const [mlRes, zonesRes, aiRes] = await Promise.allSettled([
+      const [mlRes, aiRes] = await Promise.allSettled([
         predictMLSafetyScore(effectiveLat, effectiveLng),
-        fetchRealtimeMLMarkedZones(effectiveLat, effectiveLng),
         getSafetyAnalysis(effectiveLat, effectiveLng)
       ]);
 
       if (mlRes.status === "fulfilled" && mlRes.value?.data) {
         setMlData(mlRes.value.data);
-      }
-
-      if (zonesRes.status === "fulfilled" && Array.isArray(zonesRes.value)) {
-        setMarkedZones(zonesRes.value);
       }
 
       if (aiRes.status === "fulfilled" && aiRes.value?.data) {
@@ -82,13 +77,7 @@ function SafetyAnalysis() {
   }, []);
 
   const color = mlData?.color || "#00E676";
-  const score = mlData?.score ?? 85;
-  const label = mlData?.label || "Safe Zone (75-100)";
-  const level = mlData?.level || "SAFE";
-
-  const incidentsCount = mlData?.featureBreakdown?.incidentCount ?? aiAnalysis?.incidentsLast30Days ?? 2;
-  const safeZonesCount = markedZones.length > 0 ? markedZones.length : (mlData?.featureBreakdown?.safeZoneCount ?? 3);
-  const locationText = mlData?.locationLabel || (currentPosition ? `${currentPosition.lat.toFixed(3)}° N, ${currentPosition.lng.toFixed(3)}° E` : "Chennai Region");
+  const locationText = mlData?.locationLabel || (currentPosition ? `${currentPosition.lat.toFixed(3)}° N, ${currentPosition.lng.toFixed(3)}° E` : "Coimbatore Region");
 
   // Vectors for Hexagonal Area Radar Chart
   const radarVectors = useMemo(() => [
@@ -112,79 +101,107 @@ function SafetyAnalysis() {
     }).join(" ");
   }, [radarVectors]);
 
-  // Crime Reports Breakdown Data (100% Dynamic from Backend ML Service)
+  // Crime Reports Breakdown Data (Dynamic from Backend ML Service)
   const crimeCategories = mlData?.crimeCategories || [];
 
   return (
     <UserLayout>
-      <div className="analysis" style={{ paddingBottom: showAiChat ? "0px" : "40px", height: showAiChat ? "100%" : "auto" }}>
-        {showAiChat ? (
-          <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 110px)", width: "100%" }}>
-            {/* Top Bar for Chatbot Mode */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <button
-                type="button"
-                onClick={() => setShowAiChat(false)}
-                style={{
-                  background: "#1f2937",
-                  border: "1px solid #374151",
-                  color: "#60a5fa",
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  fontSize: "13px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-                }}
-              >
-                ← Back to Safety Analytics
-              </button>
-              <span style={{ color: "#10b981", fontSize: "12px", fontWeight: "bold", background: "rgba(16, 185, 129, 0.15)", padding: "4px 12px", borderRadius: "20px", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-                ● Velora AI Smart Assistant (Embedded Mode)
-              </span>
-            </div>
-
-            {/* Embedded Chatbot Interface (Image 2 style: Full width & height, no left sidebar) */}
-            <div style={{
-              flex: 1,
-              width: "100%",
-              borderRadius: "14px",
-              overflow: "hidden",
-              border: "1px solid #374151",
-              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
-              background: "#090d16"
-            }}>
-              <iframe
-                src="http://localhost:5174?embed=true"
-                title="Velora AI Assistant Response"
-                style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-              />
-            </div>
+      <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 95px)", width: "100%", maxWidth: "100%", margin: 0, padding: 0 }}>
+        {/* Page Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexShrink: 0 }}>
+          <div>
+            <h1 style={{ color: "#ffffff", fontSize: "24px", margin: 0, fontWeight: "700" }}>AI Safety Intelligence</h1>
+            <p style={{ color: "#9ca3af", margin: "4px 0 0 0", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <FaMapMarkerAlt style={{ color: "#ec4899" }} /> Live GPS Evaluated: <strong style={{ color: "#f3f4f6" }}>{locationText}</strong>
+            </p>
           </div>
-        ) : (
-          <>
-            {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div>
-                <h1 style={{ color: "#ffffff", fontSize: "28px", margin: 0 }}>AI Safety & Crime Analytics</h1>
-                <p style={{ color: "#9ca3af", margin: "4px 0 0 0", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <FaMapMarkerAlt style={{ color: "#ec4899" }} /> Live GPS Evaluated: <strong style={{ color: "#f3f4f6" }}>{locationText}</strong>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => currentPosition && fetchAllSafetyData(currentPosition.lat, currentPosition.lng)}
-                style={{ background: "#1f2937", border: "1px solid #374151", color: "#9ca3af", padding: "8px 14px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-              >
-                <FaSync className={loading ? "spin" : ""} /> {loading ? "Analyzing..." : "Refresh Analytics"}
-              </button>
-            </div>
+          <button
+            type="button"
+            onClick={() => currentPosition && fetchAllSafetyData(currentPosition.lat, currentPosition.lng)}
+            style={{ background: "#1f2937", border: "1px solid #374151", color: "#9ca3af", padding: "7px 14px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+          >
+            <FaSync className={loading ? "spin" : ""} /> {loading ? "Analyzing..." : "Refresh Telemetry"}
+          </button>
+        </div>
 
+        {/* Native Page Tabs */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "12px",
+          borderBottom: "1px solid #1f2937",
+          paddingBottom: "10px",
+          flexShrink: 0
+        }}>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab("chat")}
+              style={{
+                background: activeTab === "chat" ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "#1f2937",
+                color: "#ffffff",
+                border: activeTab === "chat" ? "none" : "1px solid #374151",
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                fontSize: "13px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: activeTab === "chat" ? "0 4px 12px rgba(99, 102, 241, 0.35)" : "none",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <FaBrain /> AI Safety Assistant (Live Database)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("analytics")}
+              style={{
+                background: activeTab === "analytics" ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "#1f2937",
+                color: "#ffffff",
+                border: activeTab === "analytics" ? "none" : "1px solid #374151",
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                fontSize: "13px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: activeTab === "analytics" ? "0 4px 12px rgba(99, 102, 241, 0.35)" : "none",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <FaChartBar /> Area Safety Radar & Crime Analytics
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "12px", color: "#10b981", background: "rgba(16, 185, 129, 0.15)", padding: "4px 12px", borderRadius: "20px", border: "1px solid rgba(16, 185, 129, 0.3)", fontWeight: "600" }}>
+              ● Gemini 3.6 Flash & Live DB Connected
+            </span>
+          </div>
+        </div>
+
+        {/* Tab 1: AI Safety Assistant (Integrated natively into page) */}
+        {activeTab === "chat" && (
+          <div style={{ flex: 1, height: "100%", width: "100%", minHeight: 0 }}>
+            <VeloraChatbot
+              currentPosition={currentPosition}
+              mlData={mlData}
+            />
+          </div>
+        )}
+
+        {/* Tab 2: Area Safety Radar & Crime Analytics */}
+        {activeTab === "analytics" && (
+          <div style={{ flex: 1, overflowY: "auto", paddingRight: "4px" }}>
             {/* Graphs & Detailed Analytics Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
               {/* Radar Chart Card */}
               <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151" }}>
                 <h3 style={{ fontSize: "16px", color: "#ffffff", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -263,7 +280,7 @@ function SafetyAnalysis() {
             </div>
 
             {/* AI Insights & Safety Tips Section */}
-            <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151", marginBottom: "24px" }}>
+            <div style={{ background: "#1f2937", padding: "20px", borderRadius: "12px", border: "1px solid #374151", marginBottom: "20px" }}>
               <h2 style={{ color: "#ffffff", fontSize: "18px", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
                 <FaBrain style={{ color: "#ec4899" }} /> AI Advisory Insights & Recommendations
               </h2>
@@ -283,11 +300,11 @@ function SafetyAnalysis() {
               </div>
             </div>
 
-            {/* Action Button */}
-            <div style={{ textAlign: "center" }}>
-              <Button text="🤖 Ask AI Safety Assistant (Open Chat Response)" onClick={() => setShowAiChat(true)} />
+            {/* Switch to Chat Button */}
+            <div style={{ textAlign: "center", paddingBottom: "24px" }}>
+              <Button text="🤖 Open AI Safety Assistant for Deeper Analysis" onClick={() => setActiveTab("chat")} />
             </div>
-          </>
+          </div>
         )}
       </div>
     </UserLayout>

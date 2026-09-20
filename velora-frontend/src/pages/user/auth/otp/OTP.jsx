@@ -15,7 +15,7 @@ function OTP() {
   // ForgotPassword passes { identifier: phone, purpose: "FORGOT_PASSWORD", otp: "..." }
   const { identifier, purpose, otp: stateOtp } = location.state || {};
 
-  const [currentOtp, setCurrentOtp] = useState(stateOtp || "123456");
+  const [, setCurrentOtp] = useState(stateOtp || "123456");
 
   const inputsRef = useRef([]);
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
